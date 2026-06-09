@@ -1,7 +1,7 @@
 {
   "name": "@pipeworx/mcp-genius",
-  "version": "0.1.0",
-  "description": "Genius MCP — songs, artists, annotations metadata",
+  "version": "0.1.1",
+  "description": "Genius MCP — wraps the Genius API (api.genius.com)",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",

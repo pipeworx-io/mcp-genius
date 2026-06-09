@@ -17,38 +17,49 @@ interface McpToolExport {
 }
 
 /**
- * Genius MCP — songs, artists, annotations metadata
+ * Genius MCP — wraps the Genius API (api.genius.com)
  *
- * Note: Genius's API surfaces metadata (titles, IDs, URLs, descriptions,
- * artist info, hot/cold scores) but **not the actual lyric text** — that's
- * blocked by their TOS and only available via the web pages. This pack
- * returns metadata + page URLs.
- *
- * API: https://docs.genius.com/
- * Auth: Bearer token (Client Access Token). Free, register at genius.com/api-clients.
+ * IMPORTANT: This pack returns song / artist / album METADATA, search results,
+ * stats (pageviews, followers), Genius page URLs, and annotation/description
+ * text. It does NOT return full lyrics — the Genius API does not expose lyric
+ * text (licensing). Do not imply lyrics retrieval.
  *
  * Tools:
- * - search_songs:     keyword search across the catalog
- * - get_song:         song metadata + URL
- * - get_artist:       artist metadata
- * - list_artist_songs: songs by an artist (sortable, paginated)
- * - get_annotation:   annotation (community note) detail
+ * - search:        keyword search across the Genius catalog (song metadata hits)
+ * - get_song:      song metadata (title, artist, album, release, pageviews, about)
+ * - get_artist:    artist metadata (name, followers, alternate names, about)
+ * - artist_songs:  songs by an artist, ranked by popularity
+ *
+ * Auth: Bearer token. The caller passes a Genius access token as `_apiKey`
+ * (OPTIONAL — the gateway injects the platform key when omitted). Register a
+ * free Client Access Token at https://genius.com/api-clients.
  */
 
 
 const BASE_URL = 'https://api.genius.com';
+const USER_AGENT = 'pipeworx/1.0 (+https://pipeworx.io)';
 
 const tools: McpToolExport['tools'] = [
   {
-    name: 'search_songs',
+    name: 'search',
     description:
-      'Search Genius for songs by title / artist / lyrics excerpt. Returns top hits with song ID, title, primary artist, full title, URL.',
+      'Search Genius for songs by title, artist, or keyword. Returns song METADATA hits (id, title, artist, Genius URL, release date, pageviews) — NOT lyric text (the Genius API does not return lyrics). Example: search({ query: "kendrick lamar humble", limit: 10 })',
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Search term' },
-        page: { type: 'number', description: '1-based page (default 1)' },
-        per_page: { type: 'number', description: '1-50 (default 20)' },
+        query: {
+          type: 'string',
+          description: 'Search term — song title, artist name, or keyword, e.g. "humble kendrick"',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max number of results to return (default 10)',
+        },
+        _apiKey: {
+          type: 'string',
+          description:
+            'Genius access token (optional — omit to use the platform key; get your own free at https://genius.com/api-clients)',
+        },
       },
       required: ['query'],
     },
@@ -56,193 +67,257 @@ const tools: McpToolExport['tools'] = [
   {
     name: 'get_song',
     description:
-      'Song metadata: title, primary + featured artists, album, release date, description, hot count, lyrics URL. Lyric text is not in the API — use the URL.',
+      'Get METADATA for a single Genius song by ID: title, primary artist, album, release date, pageviews, Genius URL, and a short "about" description. Does NOT return lyric text (not available via the Genius API). Example: get_song({ id: 378195 })',
     inputSchema: {
       type: 'object',
       properties: {
-        song_id: { type: 'number', description: 'Genius song ID' },
+        id: {
+          type: ['number', 'string'],
+          description: 'Genius song ID, e.g. 378195',
+        },
+        _apiKey: {
+          type: 'string',
+          description: 'Genius access token (optional — omit to use the platform key)',
+        },
       },
-      required: ['song_id'],
+      required: ['id'],
     },
   },
   {
     name: 'get_artist',
-    description: 'Artist bio + identifiers.',
+    description:
+      'Get METADATA for a Genius artist by ID: name, Genius URL, image, follower count, alternate names, and a short "about" description. Example: get_artist({ id: 1421 })',
     inputSchema: {
       type: 'object',
       properties: {
-        artist_id: { type: 'number', description: 'Genius artist ID' },
+        id: {
+          type: ['number', 'string'],
+          description: 'Genius artist ID, e.g. 1421',
+        },
+        _apiKey: {
+          type: 'string',
+          description: 'Genius access token (optional — omit to use the platform key)',
+        },
       },
-      required: ['artist_id'],
+      required: ['id'],
     },
   },
   {
-    name: 'list_artist_songs',
-    description: 'Songs by an artist. Sort by popularity or release date.',
+    name: 'artist_songs',
+    description:
+      'List an artist\'s songs ranked by popularity. Returns song METADATA (id, title, artist, Genius URL) — NOT lyric text. Example: artist_songs({ artist_id: 1421, limit: 20 })',
     inputSchema: {
       type: 'object',
       properties: {
-        artist_id: { type: 'number', description: 'Genius artist ID' },
-        sort: { type: 'string', description: 'title | popularity | release_date_with_null_last' },
-        per_page: { type: 'number', description: '1-50 (default 20)' },
-        page: { type: 'number', description: '1-based page' },
+        artist_id: {
+          type: ['number', 'string'],
+          description: 'Genius artist ID, e.g. 1421',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max number of songs to return (default 20, max 50)',
+        },
+        _apiKey: {
+          type: 'string',
+          description: 'Genius access token (optional — omit to use the platform key)',
+        },
       },
       required: ['artist_id'],
-    },
-  },
-  {
-    name: 'get_annotation',
-    description: 'Single annotation (Genius community note) by ID.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        annotation_id: { type: 'number', description: 'Genius annotation ID' },
-        text_format: { type: 'string', description: 'plain | html | dom (default plain)' },
-      },
-      required: ['annotation_id'],
     },
   },
 ];
 
 async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-  const apiKey = (args._apiKey as string | undefined)?.trim();
+  const apiKey = args._apiKey as string | undefined;
+  delete args._apiKey;
+
   if (!apiKey) {
-    throw new Error(
-      'Genius requires a Client Access Token. Contact the operator about platform credentials, or BYO via ?_apiKey=<token> after registering at https://genius.com/api-clients.',
-    );
+    return { error: 'Genius requires an access token via _apiKey or the platform key' };
   }
-  switch (name) {
-    case 'search_songs':
-      return searchSongs(apiKey, args);
-    case 'get_song':
-      return getSong(apiKey, reqNum(args, 'song_id', '378195'));
-    case 'get_artist':
-      return getArtist(apiKey, reqNum(args, 'artist_id', '16775'));
-    case 'list_artist_songs':
-      return listArtistSongs(apiKey, args);
-    case 'get_annotation':
-      return getAnnotation(apiKey, args);
-    default:
-      throw new Error(`Unknown tool: ${name}`);
+
+  try {
+    switch (name) {
+      case 'search':
+        return await search(args.query as string, args.limit as number | undefined, apiKey);
+      case 'get_song':
+        return await getSong(args.id as number | string, apiKey);
+      case 'get_artist':
+        return await getArtist(args.id as number | string, apiKey);
+      case 'artist_songs':
+        return await artistSongs(
+          args.artist_id as number | string,
+          args.limit as number | undefined,
+          apiKey,
+        );
+      default:
+        return { error: `Unknown tool: ${name}` };
+    }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 }
 
-function reqNum(args: Record<string, unknown>, key: string, example: string): number {
-  const v = args[key];
-  if (typeof v !== 'number' || !Number.isFinite(v)) {
-    throw new Error(`Required argument "${key}" must be a number. Example: ${example}.`);
-  }
-  return v;
-}
+// Marker thrown for HTTP 401 so callers can short-circuit to the auth message.
+class GeniusAuthError extends Error {}
+// Marker thrown for HTTP 404 so per-tool handlers can return a typed not-found.
+class GeniusNotFoundError extends Error {}
 
-async function geniusFetch<T>(apiKey: string, path: string, params: URLSearchParams): Promise<T> {
-  const url = `${BASE_URL}${path}${params.toString() ? `?${params}` : ''}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
+async function geniusFetch<T>(path: string, apiKey: string): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: 'application/json',
+      'User-Agent': USER_AGENT,
+    },
   });
-  if (res.status === 401 || res.status === 403) throw new Error('Genius: unauthorized — check the API token');
-  if (res.status === 404) throw new Error('Genius: not found (HTTP 404)');
-  if (res.status === 429) throw new Error('Genius: rate-limit (HTTP 429)');
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Genius error: ${res.status} ${body.slice(0, 200)}`);
-  }
-  return res.json() as Promise<T>;
+  if (res.status === 401) throw new GeniusAuthError('Genius auth error (check access token)');
+  if (res.status === 404) throw new GeniusNotFoundError('not found');
+  if (!res.ok) throw new Error(`Genius error: HTTP ${res.status}`);
+  return (await res.json()) as T;
 }
 
-interface GeniusEnvelope<T> {
-  meta?: { status?: number };
-  response?: T;
+function truncate(text: string | undefined | null, max = 600): string | null {
+  if (!text) return null;
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-async function searchSongs(apiKey: string, args: Record<string, unknown>) {
-  const params = new URLSearchParams({
-    q: String(args.query),
-    page: String(Math.max(1, (args.page as number) ?? 1)),
-    per_page: String(Math.min(50, Math.max(1, (args.per_page as number) ?? 20))),
-  });
-  const data = await geniusFetch<
-    GeniusEnvelope<{ hits?: { result?: GeniusSongSummary }[] }>
-  >(apiKey, '/search', params);
-  const hits = data.response?.hits ?? [];
-  return {
-    query: args.query,
-    count: hits.length,
-    songs: hits.map((h) => normalizeSongSummary(h.result ?? {})),
-  };
+interface ArtistRef {
+  id?: number;
+  name?: string;
 }
 
-interface GeniusSongSummary {
+interface SongHitResult {
   id?: number;
   title?: string;
   full_title?: string;
+  primary_artist?: ArtistRef;
   url?: string;
-  song_art_image_url?: string;
-  header_image_url?: string;
-  primary_artist?: { id?: number; name?: string; url?: string };
+  release_date_for_display?: string;
+  stats?: { pageviews?: number };
 }
 
-function normalizeSongSummary(s: GeniusSongSummary) {
+async function search(query: string, limit: number | undefined, apiKey: string) {
+  const cap = typeof limit === 'number' && limit > 0 ? limit : 10;
+  let data: { response?: { hits?: { result?: SongHitResult }[] } };
+  try {
+    data = await geniusFetch(`/search?q=${encodeURIComponent(query)}`, apiKey);
+  } catch (err) {
+    if (err instanceof GeniusAuthError) return { error: err.message };
+    throw err;
+  }
+  const hits = data.response?.hits ?? [];
+  const results = hits.slice(0, cap).map((h) => {
+    const r = h.result ?? {};
+    return {
+      id: r.id,
+      title: r.full_title,
+      artist: r.primary_artist?.name,
+      artist_id: r.primary_artist?.id,
+      url: r.url,
+      release_date: r.release_date_for_display,
+      pageviews: r.stats?.pageviews,
+    };
+  });
+  return { count: results.length, results };
+}
+
+interface SongDetail {
+  id?: number;
+  title?: string;
+  full_title?: string;
+  primary_artist?: ArtistRef;
+  album?: { id?: number; name?: string } | null;
+  release_date?: string;
+  release_date_for_display?: string;
+  stats?: { pageviews?: number };
+  url?: string;
+  description?: { plain?: string };
+}
+
+async function getSong(id: number | string, apiKey: string) {
+  let data: { response?: { song?: SongDetail } };
+  try {
+    data = await geniusFetch(`/songs/${encodeURIComponent(String(id))}`, apiKey);
+  } catch (err) {
+    if (err instanceof GeniusAuthError) return { error: err.message };
+    if (err instanceof GeniusNotFoundError) return { error: 'song not found', id };
+    throw err;
+  }
+  const s = data.response?.song;
+  if (!s) return { error: 'song not found', id };
   return {
-    id: s.id ?? null,
-    title: s.title ?? null,
-    full_title: s.full_title ?? null,
-    primary_artist: s.primary_artist?.name ?? null,
-    primary_artist_id: s.primary_artist?.id ?? null,
-    art_image: s.song_art_image_url ?? null,
-    genius_url: s.url ?? null,
+    id: s.id,
+    title: s.full_title,
+    artist: s.primary_artist?.name,
+    artist_id: s.primary_artist?.id,
+    album: s.album?.name,
+    release_date: s.release_date,
+    pageviews: s.stats?.pageviews,
+    url: s.url,
+    about: truncate(s.description?.plain),
   };
 }
 
-async function getSong(apiKey: string, songId: number) {
-  const data = await geniusFetch<GeniusEnvelope<{ song?: Record<string, unknown> }>>(
-    apiKey,
-    `/songs/${songId}`,
-    new URLSearchParams({ text_format: 'plain' }),
-  );
-  return data.response?.song ?? null;
+interface ArtistDetail {
+  id?: number;
+  name?: string;
+  url?: string;
+  image_url?: string;
+  followers_count?: number;
+  description?: { plain?: string };
+  alternate_names?: string[];
 }
 
-async function getArtist(apiKey: string, artistId: number) {
-  const data = await geniusFetch<GeniusEnvelope<{ artist?: Record<string, unknown> }>>(
-    apiKey,
-    `/artists/${artistId}`,
-    new URLSearchParams({ text_format: 'plain' }),
-  );
-  return data.response?.artist ?? null;
-}
-
-async function listArtistSongs(apiKey: string, args: Record<string, unknown>) {
-  const artistId = reqNum(args, 'artist_id', '16775');
-  const params = new URLSearchParams({
-    sort: (args.sort as string) ?? 'popularity',
-    per_page: String(Math.min(50, Math.max(1, (args.per_page as number) ?? 20))),
-    page: String(Math.max(1, (args.page as number) ?? 1)),
-  });
-  const data = await geniusFetch<GeniusEnvelope<{ songs?: GeniusSongSummary[]; next_page?: number | null }>>(
-    apiKey,
-    `/artists/${artistId}/songs`,
-    params,
-  );
+async function getArtist(id: number | string, apiKey: string) {
+  let data: { response?: { artist?: ArtistDetail } };
+  try {
+    data = await geniusFetch(`/artists/${encodeURIComponent(String(id))}`, apiKey);
+  } catch (err) {
+    if (err instanceof GeniusAuthError) return { error: err.message };
+    if (err instanceof GeniusNotFoundError) return { error: 'artist not found', id };
+    throw err;
+  }
+  const a = data.response?.artist;
+  if (!a) return { error: 'artist not found', id };
   return {
-    artist_id: artistId,
-    next_page: data.response?.next_page ?? null,
-    count: data.response?.songs?.length ?? 0,
-    songs: (data.response?.songs ?? []).map(normalizeSongSummary),
+    id: a.id,
+    name: a.name,
+    url: a.url,
+    image: a.image_url,
+    followers: a.followers_count,
+    alternate_names: a.alternate_names,
+    about: truncate(a.description?.plain),
   };
 }
 
-async function getAnnotation(apiKey: string, args: Record<string, unknown>) {
-  const id = reqNum(args, 'annotation_id', '12345');
-  const params = new URLSearchParams({
-    text_format: (args.text_format as string) ?? 'plain',
-  });
-  const data = await geniusFetch<GeniusEnvelope<{ annotation?: Record<string, unknown> }>>(
-    apiKey,
-    `/annotations/${id}`,
-    params,
-  );
-  return data.response?.annotation ?? null;
+interface ArtistSong {
+  id?: number;
+  title?: string;
+  full_title?: string;
+  primary_artist?: ArtistRef;
+  url?: string;
+}
+
+async function artistSongs(artistId: number | string, limit: number | undefined, apiKey: string) {
+  let perPage = typeof limit === 'number' && limit > 0 ? limit : 20;
+  if (perPage > 50) perPage = 50;
+  let data: { response?: { songs?: ArtistSong[] } };
+  try {
+    data = await geniusFetch(
+      `/artists/${encodeURIComponent(String(artistId))}/songs?sort=popularity&per_page=${encodeURIComponent(String(perPage))}`,
+      apiKey,
+    );
+  } catch (err) {
+    if (err instanceof GeniusAuthError) return { error: err.message };
+    throw err;
+  }
+  const songs = (data.response?.songs ?? []).map((s) => ({
+    id: s.id,
+    title: s.full_title,
+    artist: s.primary_artist?.name,
+    url: s.url,
+  }));
+  return { artist_id: artistId, count: songs.length, songs };
 }
 
 export default { tools, callTool, meter: { credits: 1 } } satisfies McpToolExport;

@@ -1,16 +1,13 @@
 # mcp-genius
 
-Genius MCP — songs, artists, annotations metadata
+Genius MCP — wraps the Genius API (api.genius.com)
 
-Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 673+ live data sources.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 832+ live data sources.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `get_artist` | Artist bio + identifiers. |
-| `list_artist_songs` | Songs by an artist. Sort by popularity or release date. |
-| `get_annotation` | Single annotation (Genius community note) by ID. |
 
 ## Quick Start
 
@@ -26,7 +23,7 @@ Add to your MCP client (Claude Desktop, Cursor, Windsurf, etc.):
 }
 ```
 
-Or connect to the full Pipeworx gateway for access to all 673+ data sources:
+Or connect to the full Pipeworx gateway for access to all 832+ data sources:
 
 ```json
 {

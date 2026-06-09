@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pipeworx-io/genius",
   "title": "Genius",
-  "description": "Genius MCP — songs, artists, annotations metadata",
-  "version": "0.1.0",
+  "description": "Genius MCP — wraps the Genius API (api.genius.com)",
+  "version": "0.1.1",
   "websiteUrl": "https://pipeworx.io/packs/genius",
   "repository": {
     "url": "https://github.com/pipeworx-io/mcp-genius",
