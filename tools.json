@@ -1,0 +1,99 @@
+[
+  {
+    "name": "search",
+    "description": "Search Genius for songs by title, artist, or keyword. Returns song METADATA hits (id, title, artist, Genius URL, release date, pageviews) — NOT lyric text (the Genius API does not return lyrics). Example: search({ query: \"kendrick lamar humble\", limit: 10 })",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search term — song title, artist name, or keyword, e.g. \"humble kendrick\""
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max number of results to return (default 10)"
+        },
+        "_apiKey": {
+          "type": "string",
+          "description": "Genius access token (optional — omit to use the platform key; get your own free at https://genius.com/api-clients)"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+  },
+  {
+    "name": "get_song",
+    "description": "Get METADATA for a single Genius song by ID: title, primary artist, album, release date, pageviews, Genius URL, and a short \"about\" description. Does NOT return lyric text (not available via the Genius API). Example: get_song({ id: 378195 })",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "number",
+            "string"
+          ],
+          "description": "Genius song ID, e.g. 378195"
+        },
+        "_apiKey": {
+          "type": "string",
+          "description": "Genius access token (optional — omit to use the platform key)"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  },
+  {
+    "name": "get_artist",
+    "description": "Get METADATA for a Genius artist by ID: name, Genius URL, image, follower count, alternate names, and a short \"about\" description. Example: get_artist({ id: 1421 })",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "number",
+            "string"
+          ],
+          "description": "Genius artist ID, e.g. 1421"
+        },
+        "_apiKey": {
+          "type": "string",
+          "description": "Genius access token (optional — omit to use the platform key)"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  },
+  {
+    "name": "artist_songs",
+    "description": "List an artist's songs ranked by popularity. Returns song METADATA (id, title, artist, Genius URL) — NOT lyric text. Example: artist_songs({ artist_id: 1421, limit: 20 })",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artist_id": {
+          "type": [
+            "number",
+            "string"
+          ],
+          "description": "Genius artist ID, e.g. 1421"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max number of songs to return (default 20, max 50)"
+        },
+        "_apiKey": {
+          "type": "string",
+          "description": "Genius access token (optional — omit to use the platform key)"
+        }
+      },
+      "required": [
+        "artist_id"
+      ]
+    }
+  }
+]
