@@ -1,6 +1,6 @@
 [
   {
-    "name": "search",
+    "name": "genius_search",
     "description": "Search Genius for songs by title, artist, or keyword. Returns song METADATA hits (id, title, artist, Genius URL, release date, pageviews) — NOT lyric text (the Genius API does not return lyrics). Example: search({ query: \"kendrick lamar humble\", limit: 10 })",
     "inputSchema": {
       "type": "object",
@@ -47,7 +47,7 @@
     }
   },
   {
-    "name": "get_artist",
+    "name": "genius_get_artist",
     "description": "Get METADATA for a Genius artist by ID: name, Genius URL, image, follower count, alternate names, and a short \"about\" description. Example: get_artist({ id: 1421 })",
     "inputSchema": {
       "type": "object",

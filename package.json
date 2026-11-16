@@ -1,7 +1,7 @@
 {
   "name": "@pipeworx/mcp-genius",
-  "version": "0.2.1",
-  "description": "Genius MCP — wraps the Genius API (api.genius.com)",
+  "version": "0.2.2",
+  "description": "Unofficial Genius MCP — wraps the Genius API (api.genius.com)",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -27,7 +27,7 @@
     "mode": "gateway",
     "slug": "genius",
     "gatewaySlug": "genius",
-    "sourceHash": "v1-fe25be37b2abd5cca6111ea5da22619d6227e195998e0fe1d33a0444dadbeaf4",
-    "sourceCommit": "030233f6b150a38a44421f88a5fcbad123f0fea8"
+    "sourceHash": "v1-2798686f265363cf6871de0e6b0d40165142a866105f4599fb72299bb014a6ee",
+    "sourceCommit": "874331b0c46b151f9264bd14840631427a7721c1"
   }
 }

@@ -4,7 +4,7 @@ Genius MCP — song / artist / album **metadata**, search, and Genius annotation
 descriptions. Lyric text is **not** returned by the Genius API (licensing) —
 this pack returns titles, IDs, stats, Genius page URLs, and "about" descriptions.
 
-Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1865+ live data sources. This is an independent, unofficial integration — not affiliated with, endorsed by, or published by the upstream provider.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 2006+ live data sources. This is an independent, unofficial integration — not affiliated with, endorsed by, or published by the upstream provider.
 
 ## Tools
 
@@ -25,7 +25,7 @@ Sent as `Authorization: Bearer <token>` on every request.
 
 ## Data source
 
-`https://api.genius.com` — Bearer access token.
+Genius — Bearer access token.
 
 ## Quick Start
 
@@ -71,7 +71,7 @@ directly, instead of just this one's:
 }
 ```
 
-Both URLs reach the same gateway and the same 1865+ data sources. The
+Both URLs reach the same gateway and the same 2006+ data sources. The
 only difference is which pack's tools are listed **directly**; `ask_pipeworx`
 reaches all of them from either one.
 
